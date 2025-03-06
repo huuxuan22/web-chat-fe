@@ -17,15 +17,23 @@ import Button from "@mui/material/Button";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Group from "../Group/Group";
+import * as userService from "./../../Redux/Auth/Action";
+import * as chatService from "./../../Redux/Chat/Action"
+import { useDispatch, useSelector } from 'react-redux';
+import { store } from "../../Redux/store";
+
 const HomePage = () => {
   const [query, setQuery] = useState(null);
   const [currentChat, setCurrentChat] = useState(false);
   const [content, setContent] = useState("");
-  const handleSearch = () => {};
   const [isProfile, setIsProfile] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const {auth} = useSelector(store => store);
+  const token = localStorage.getItem("token");
   const [openGroup, setOpenGroup] = useState(false);
-  const handleClickOnChatCard = () => {
+  const handleClickOnChatCard = (item,userId) => {
+    dispatch(chatService.creaeChat({userId,token}))
     setCurrentChat(true);
   };
 
@@ -43,6 +51,13 @@ const HomePage = () => {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const handleSearch =async (keyword) => {
+    console.log(keyword);
+    console.log(query);
+      await  dispatch(userService.searchUser({keyword,token}))
+  };
+
 
   return (
     <div className="relative min-h-screen flex flex-col bg-gray-200">
@@ -115,13 +130,14 @@ const HomePage = () => {
             {/* Chat List */}
             <div className="flex-1  space-y-1 overflow-y-auto bg-white rounded-lg shadow-inner p-2">
               {query &&
-                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].map((item, index) => (
+                auth.searchUser?.map((item, index) => (
+                  
                   <div
                     key={index}
-                    onClick={handleClickOnChatCard}
+                    onClick={() => {handleClickOnChatCard(item.userId)}}
                     className="mb-2 border-b pb-2"
                   >
-                    <ChatCard />
+                    <ChatCard item={item}/>
                   </div>
                 ))}
             </div>

@@ -1,15 +1,18 @@
 
 
 
-const ChatCard = () => {
+const ChatCard = ({item}) => {
+    console.log("đã đi vào chatCard");
+    
     return (
         <div className="flex items-center justify-between py-2 group cursor-pointer">
             <div className="w-[20%]">
-                <img className="h-14 w-14 rounded-full" src="https://static.vecteezy.com/system/resources/previews/008/442/086/non_2x/illustration-of-human-icon-user-symbol-icon-modern-design-on-blank-background-free-vector.jpg" alt="" />
+                <img className="h-14 w-14 rounded-full" 
+                src="https://static.vecteezy.com/system/resources/previews/018/765/757/original/user-profile-icon-in-flat-style-member-avatar-illustration-on-isolated-background-human-permission-sign-business-concept-vector.jpg" alt="" />
             </div>                
             <div className="pl-5 w-[80%]">
                 <div className="flex justify-between items-center">
-                    <p className="text-lg">username</p>
+                    <p className="text-lg">{item.fullName}</p>
                     <p className="text-sm">timesamp</p>
                 </div>
                 <div className="flex justify-between items-center">

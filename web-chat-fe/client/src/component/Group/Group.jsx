@@ -38,8 +38,6 @@ const users = [
 ];
 
 const Group = ({ open, onClose }) => {
-  console.log("đã vào trong group");
-
   const [groupName, setGroupName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUsers, setSelectedUsers] = useState(users);

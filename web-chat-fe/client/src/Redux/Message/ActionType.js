@@ -1,0 +1,4 @@
+export const CREATE_MESSAGE = "CREATE_MESSAGE";
+export const GET_ALL_MESSAGE = "GET_ALL_MESSAGE";
+export const GET_MESSAGE = "GET_MESSAGE";
+export const DELETE_MESSAGE = "DELETE_MESSAGE"

@@ -71,17 +71,19 @@ export const currentUser = (token) => async (dispatch) => {
 
 export const searchUser = (data) => async (dispatch) => {
     try {
-        const res = await axios.post(
+        const res = await axios.get(
             `${BASE_API_URL}/api/user/search?name=${data.keyword}`,
             {
-                headers: {
-                    Authorization: `Bearer ${data.token}`, // Thêm token vào headers
-                    "Content-Type": "application/json"
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${data.token}`
                 }
             }
         );
         dispatch({ type: SEARCH_USER, payload: res.data });
-        return res;
+        console.log(res.data);
+        
+        return res.data;
     } catch (error) {
         console.error("Lỗi API:", error);
 
