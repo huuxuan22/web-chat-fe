@@ -1,0 +1,36 @@
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Khoảng cách giữa các icon */
+}
+
+.icon-wrapper .MuiBadge-root,  /* Badge của Material-UI */
+.icon-wrapper svg { 
+  font-size: 24px; /* Đồng bộ kích thước icon */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Căn chỉnh lại badge icon */
+.badge-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Điều chỉnh danh sách yêu cầu kết bạn */
+.friendship-list {
+  position: absolute;
+  top: 40px;
+  right: 15px;
+  background: white;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 1000;
+  width: 350px;
+  max-height: 400px;
+  overflow-y: auto;
+}

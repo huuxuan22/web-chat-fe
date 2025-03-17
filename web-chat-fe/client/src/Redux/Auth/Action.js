@@ -1,5 +1,5 @@
 import { BASE_API_URL } from "../../config/api"
-import { LOGIN, REGISTER, REQ_USER, SEARCH_USER, UPDATE_USER } from "./ActionType";
+import { LOGIN, REGISTER, REQ_USER, SEARCH_USER, SEARCH_USER_FOR_ADD_FRIEND, UPDATE_USER } from "./ActionType";
 import axios from "axios"
 
 
@@ -25,7 +25,6 @@ export const register = (data) => async (dispatch) => {
 
 export const login = (data) => async (dispatch) => {
     try {
-        console.log("dữ liệu đăng nhập: ", data);
         const res = await axios.post(`${BASE_API_URL}/api/login`, data, {
             headers: {
                 "Content-Type": "application/json"
@@ -55,7 +54,6 @@ export const currentUser = (token) => async (dispatch) => {
         });
 
         dispatch({ type: REQ_USER, payload: res.data });
-
         return { success: true, data: res.data };
     } catch (error) {
         console.error("Lỗi từ BE:", error);
@@ -67,12 +65,10 @@ export const currentUser = (token) => async (dispatch) => {
         }
     }
 };
-
-
 export const searchUser = (data) => async (dispatch) => {
     try {
         const res = await axios.get(
-            `${BASE_API_URL}/api/user/search?name=${data.keyword}`,
+            `${BASE_API_URL}/api/chat/get-all?name=${data.keyword}`,
             {
                 headers: { 
                     "Content-Type": "application/json",
@@ -82,7 +78,6 @@ export const searchUser = (data) => async (dispatch) => {
         );
         dispatch({ type: SEARCH_USER, payload: res.data });
         console.log(res.data);
-        
         return res.data;
     } catch (error) {
         console.error("Lỗi API:", error);
@@ -92,7 +87,6 @@ export const searchUser = (data) => async (dispatch) => {
         };
     }
 }
-
 export const updateUser = (data) => async (dispatch) => {
     try {
         const res = await axios.post(
@@ -106,6 +100,30 @@ export const updateUser = (data) => async (dispatch) => {
         );
         dispatch({ type: UPDATE_USER, payload: res.data });
         return res;
+    } catch (error) {
+        console.error("Lỗi API:", error);
+
+        return {
+            error: error.response?.data?.message || "Lỗi máy chủ, vui lòng thử lại!"
+        };
+    }
+}
+
+
+export const searchUserForAdd = (data) => async (dispatch) => {
+    try {
+        const res = await axios.get(
+            `${BASE_API_URL}/api/user/search-user?name=${data.search}`,
+            {
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${data.token}`
+                }
+            }
+        );
+        dispatch({ type: SEARCH_USER_FOR_ADD_FRIEND, payload: res.data });
+        console.log(res.data);
+        return res.data;
     } catch (error) {
         console.error("Lỗi API:", error);
 

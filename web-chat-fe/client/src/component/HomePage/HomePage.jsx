@@ -18,30 +18,63 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Group from "../Group/Group";
 import * as userService from "./../../Redux/Auth/Action";
-import * as chatService from "./../../Redux/Chat/Action"
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from "react-redux";
 import { store } from "../../Redux/store";
-
+import { useEffect } from "react";
+import SockJS from "sockjs-client";
+import * as statusService from "./../../Redux/Status/Action";
+import { Stomp } from "@stomp/stompjs";
+import { Badge } from "@mui/material";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import AddFriend from "../AddFriend/AddFriend";
+import PersonAddIcon from "@mui/icons-material/PersonAdd"; // Import biểu tượng mới
+import FriendRequestsList from "../AddFriend/FriendRequest";
+import * as notificationService from "./../../../src/Service/notificationService";
+import { set } from "react-hook-form";
 const HomePage = () => {
   const [query, setQuery] = useState(null);
   const [currentChat, setCurrentChat] = useState(false);
-  const [content, setContent] = useState("");
   const [isProfile, setIsProfile] = useState(true);
+  const [chatUser, setChatUser] = useState(null);
+  const [userLogin, setUserLogin] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const {auth} = useSelector(store => store);
+  const { auth, chat, message, status  } = useSelector(
+    (store) => store
+  );
+  const {notification} = useSelector(store => store)
   const token = localStorage.getItem("token");
   const [openGroup, setOpenGroup] = useState(false);
-  const handleClickOnChatCard = (item,userId) => {
-    dispatch(chatService.creaeChat({userId,token}))
+  const [openAddFriend, setOpenAddFriend] = useState(false);
+  const [showFriendRequests, setShowFriendRequests] = useState(false);
+  const [notificationList,setNotificationList] = useState([]);
+  const [check, setCheck] = useState(false);
+
+  useEffect(() => {
+    notificationService.getAllNotification(token).then((res) => {
+      setNotificationList(res.data);
+  })}, [check]);
+
+
+  const reloadNotification =async () => {
+    await notificationService.getAllNotification(token).then((res) => {
+      setNotificationList(res.data);
+    });
+  };
+  
+  useEffect(() => {
+    reloadNotification();
+  }, []);
+
+
+  const handleClickOnChatCard = (value) => {
+    setChatUser(value);
     setCurrentChat(true);
   };
 
-  const handleCreateNewMessage = () => {};
   const handleShowProfile = () => {
     setIsProfile(false);
   };
-  console.log(isProfile);
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -52,13 +85,73 @@ const HomePage = () => {
     setAnchorEl(null);
   };
 
-  const handleSearch =async (keyword) => {
-    console.log(keyword);
-    console.log(query);
-      await  dispatch(userService.searchUser({keyword,token}))
+  useEffect(() => {
+    const fetchUser = async () => {
+      const response = await dispatch(userService.currentUser(token));
+      setUserLogin(response.data); // Cập nhật state với dữ liệu user
+    };
+
+    if (token) {
+      fetchUser();
+    }
+  }, [token, dispatch]);
+
+  const handleSearch = async (keyword) => {
+    await dispatch(userService.searchUser({ keyword, token }));
   };
 
+  useEffect(() => {
+    if (token) {
+      const keyword = "";
+      dispatch(userService.searchUser({ keyword, token }));
+    }
+  }, []);
 
+  useEffect(() => {
+    if (auth.searchUser) {
+      dispatch(statusService.giveValueToGroupStatus(auth.searchUser));
+    }
+  }, [auth.searchUser]);
+
+  // webSocket ========================================================================
+  const socketFactory = () => new SockJS("http://localhost:8080/ws");
+  const client = Stomp.over(socketFactory);
+  const [stompClient, setStompClient] = useState(null);
+  useEffect(() => {
+    // Khởi tạo WebSocket client
+    const socketFactory = () => new SockJS("http://localhost:8080/ws");
+    const client = Stomp.over(socketFactory);
+
+    client.connect(
+      // Truyền token vào header
+      {},
+      () => {
+        console.log("✅ Kết nối WebSocket thành công!");
+        setStompClient(client);
+
+        client.subscribe("/topic/messages", (message) => {
+          console.log("📩 Tin nhắn nhận được:", message.body);
+          const receivedMessage = JSON.parse(message.body);
+          const keyword = "";
+          dispatch(userService.searchUser({ keyword, token }));
+        });
+      },
+      (error) => {
+        console.error("❌ Lỗi kết nối WebSocket:", error);
+      }
+    );
+
+    return () => {
+      if (client) {
+        client.disconnect(() => {
+          console.log("🔌 WebSocket đã đóng kết nối");
+        });
+      }
+    };
+  }, [token]);
+  const handleClickAddFriend = () => {
+    setOpenAddFriend(true);
+  };
   return (
     <div className="relative min-h-screen flex flex-col bg-gray-200">
       <div className="w-full py-6 bg-[#20ac8b]"></div>
@@ -74,10 +167,14 @@ const HomePage = () => {
               >
                 <img
                   className="rounded-full w-10 h-10 cursor-pointer"
-                  src="https://img.freepik.com/free-vector/user-blue-gradient_78370-4692.jpg"
+                  src={
+                    userLogin === null
+                      ? "https://uploads-ssl.webflow.com/62396affb4902b847d57a975/6447c56a51c36d7cd2950602_Website_Blog_Feature-Image_How-to-use-WA-Web-for-Business.png"
+                      : userLogin.thumbnail
+                  }
                   alt="User Avatar"
                 />
-                <p className="font-semibold">Username</p>
+                <p className="font-semibold">{userLogin?.fullName}</p>
               </div>
               <div className="space-x-3 text-2xl flex cursor-pointer">
                 <TbCircleDashed
@@ -85,7 +182,27 @@ const HomePage = () => {
                     navigate("/status");
                   }}
                 />
-                <BiCommentDetail onClick={handleClick} />
+                <div className="relative">
+                  <Badge
+                    badgeContent={notificationList.length}
+                    color="error"
+                    onClick={() => setShowFriendRequests(!showFriendRequests)} // Toggle hiển thị danh sách
+                    className="cursor-pointer"
+                  >
+                    <PersonAddIcon style={{ fontSize: "30px",marginBottom: "10px" }} />
+                  </Badge>
+                  {showFriendRequests && (
+                    <div className="friendship-list absolute">
+                      <FriendRequestsList
+                        notifications={notification.notifications}
+                        setCheck={setCheck}
+                        check= {check}
+                        userLogin={userLogin}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <BsThreeDotsVertical
                     id="basic-button"
@@ -103,9 +220,13 @@ const HomePage = () => {
                       "aria-labelledby": "basic-button",
                     }}
                   >
-                    <MenuItem onClick={() => setOpenGroup(true)}>Create Group</MenuItem>
-                    <MenuItem onClick={handleClose}>My account</MenuItem>
-                    <MenuItem onClick={handleClose}>Logout</MenuItem>
+                    <MenuItem onClick={() => setOpenGroup(true)}>
+                      CREATE GROUP
+                    </MenuItem>
+                    <MenuItem onClick={handleClickAddFriend}>
+                      ADD FRIEND
+                    </MenuItem>
+                    <MenuItem onClick={handleClose}>LOGOUT</MenuItem>
                   </Menu>
                 </div>
               </div>
@@ -129,15 +250,20 @@ const HomePage = () => {
 
             {/* Chat List */}
             <div className="flex-1  space-y-1 overflow-y-auto bg-white rounded-lg shadow-inner p-2">
-              {query &&
-                auth.searchUser?.map((item, index) => (
-                  
+              {auth.searchUser
+                ?.slice()
+                .reverse()
+                .map((item, index) => (
                   <div
                     key={index}
-                    onClick={() => {handleClickOnChatCard(item.userId)}}
+                    onClick={() => handleClickOnChatCard(item)}
                     className="mb-2 border-b pb-2"
                   >
-                    <ChatCard item={item}/>
+                    <ChatCard
+                      item={item}
+                      groupStatus={status.groupStatus}
+                      userLogin={userLogin}
+                    />
                   </div>
                 ))}
             </div>
@@ -146,55 +272,17 @@ const HomePage = () => {
           <Profile setIsProfile={setIsProfile} />
         )}
 
-        {/* Main Chat Area */}
+        {/* Main Chat Area 
+          userId,chatId,fullName,image
+        */}
         {currentChat ? (
-          <div className="w-2/3 h-full flex flex-col   bg-white p-2 rounded-r-lg">
-            <div className="flex items-center gap-3 p-3 border-b">
-              {/* Ảnh đại diện */}
-              <img
-                src="https://th.bing.com/th/id/OIP.OR_D8o6tNo83MYoZrQexOwHaGj?rs=1&pid=ImgDetMain" // Thay bằng URL avatar thật
-                alt="User Avatar"
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              {/* Tên người dùng */}
-              <span className="font-semibold text-lg">Nguyễn Văn A</span>
-            </div>
-            <div className="flex flex-col h-full gap-1 border border-none display-right mt-8">
-              {[1, 1, 1, 1, 1].map((item, index) => (
-                <MessageCard
-                  key={index}
-                  isRequest={index % 2 === 0}
-                  content={"heeeeeeee"}
-                />
-              ))}
-            </div>
-            <div className="footer p-[10px] flex bg-[#f0f2f5]">
-              <div className="w-[20%] gap-3 flex justify-between items-center px-5 relative">
-                <BsEmojiSmile size={24} className="cursor-pointer" />
-                <ImAttachment size={24} className="cursor-pointer" />
-                <BsMicFill size={24} className="cursor-pointer" />
-              </div>
-              <div className="w-[100%]">
-                <input
-                  className="py-3 rounded-xl  outline-none border-none  bg-white pl-8 rounder-md w-[100%]"
-                  type="text"
-                  placeholder="Type message......."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key == "Enter") {
-                      handleCreateNewMessage();
-                      setContent("");
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="w-[10%] gap-3 flex justify-center items-center  relative">
-                <BsHandThumbsUp size={24} className="cursor-pointer " />
-              </div>
-            </div>
-          </div>
+          <MessageCard
+            item={chatUser}
+            userLogin={userLogin}
+            groupStatus={status.groupStatus}
+            socketFactory={socketFactory}
+            client={client}
+          />
         ) : (
           <div className="w-2/3 h-full flex flex-col items-center justify-center bg-white p-6 rounded-r-lg">
             <img
@@ -214,7 +302,19 @@ const HomePage = () => {
           </div>
         )}
       </div>
-      <Group open={openGroup} onClose={() => setOpenGroup(false)} />
+      <Group
+        open={openGroup}
+        setOpenGroup={setOpenGroup}
+        onClose={() => setOpenGroup(false)}
+      />
+      <AddFriend
+        open={openAddFriend}
+        onClose={setOpenAddFriend}
+        userLogin={userLogin}
+        setCheck={setCheck}
+        check={check}
+        reloadNotification={reloadNotification}
+      />
 
       {/* cửa sổ nhắn tin chỗ này  */}
     </div>

@@ -4,53 +4,64 @@ import {
   Dialog,
   DialogActions,
   DialogTitle,
+  Snackbar,
   TextField,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import * as groupService from "./../../Service/GroupService";
 
-const users = [
-  {
-    id: 1,
-    name: "Jennifer Bayless",
-    avatar: "/path/to/avatar1.jpg",
-    added: false,
-  },
-  {
-    id: 2,
-    name: "Timothy Miller",
-    avatar: "/path/to/avatar2.jpg",
-    added: true,
-  },
-  { id: 3, name: "Mark Segura", avatar: "/path/to/avatar3.jpg", added: false },
-  {
-    id: 4,
-    name: "Annett Poythress",
-    avatar: "/path/to/avatar4.jpg",
-    added: true,
-  },
-  {
-    id: 5,
-    name: "Jennifer Bayless",
-    avatar: "/path/to/avatar5.jpg",
-    added: false,
-  },
-];
-
-const Group = ({ open, onClose }) => {
+const Group = ({ open, onClose,setOpenGroup }) => {
   const [groupName, setGroupName] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState(users);
-
-  // hàm bậc trạng thái thêm người dùng
+  const [usersList, setUsersList] = useState([]);
+  const [userIds, setUserIds] = useState([]);
+  const token = localStorage.getItem("token");
+  const [openN, setOpenN] = useState(false);
+  const [message, setMessage] = useState("Thêm mới thành công");
+  // Hàm bật trạng thái thêm người dùng
   const toggleUser = (id) => {
-    setSelectedUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, added: !user.added } : user
-      )
-    );
+    setUserIds((prev) => {
+      const updatedUsers = prev.includes(id)
+        ? prev.filter((userId) => userId !== id) // Xóa nếu đã tồn tại
+        : [...prev, id]; // Thêm vào nếu chưa có
+      return updatedUsers;
+    });
   };
 
+  // Theo dõi thay đổi của selectedUsers
+  useEffect(() => {
+  }, [userIds]);
+
+  const handleSearch = async (data) => {
+    try {
+      const result = await groupService.searchUser({ data, token });
+      if (Array.isArray(result)) {
+        setUsersList(result);
+      } else {
+        console.error("Dữ liệu tìm kiếm không hợp lệ:", result);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tìm kiếm người dùng:", error);
+    }
+  };
+
+  const handleAddGroup = async () => {
+    if (userIds.length === 0) {
+      setOpenN(true);
+      setMessage("Bạn chưa chọn người tham gia");
+    } else {
+      const res = groupService.createGroup({userIds,groupName},token).then((data) => {
+        setMessage("Tạo nhóm mới thành công");
+        setOpenN(true);
+        setOpenGroup(false);
+      })
+    }
+  };
+  
+  const handleClose = () => {
+    setOpenN(false);
+  };
   return (
     <div>
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -62,9 +73,6 @@ const Group = ({ open, onClose }) => {
 
           {/* Upload & Input */}
           <div className="flex items-center gap-4 p-4">
-            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center cursor-pointer">
-              📷
-            </div>
             <TextField
               fullWidth
               variant="standard"
@@ -81,39 +89,41 @@ const Group = ({ open, onClose }) => {
               type="text"
               placeholder="Search for people to add"
               className="pl-10 p-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
 
           {/* User List */}
           <div className="mt-4 space-y-2">
-            {selectedUsers
-              .filter((user) =>
-                user.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map((user) => (
+            {usersList?.map((user) => {
+              const isSelected = userIds.includes(user.userId);
+              return (
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-2 bg-gray-100 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={user.avatar}
+                      src={
+                        !user.thumbnail
+                          ? "https://static.vecteezy.com/system/resources/previews/018/765/757/original/user-profile-icon-in-flat-style-member-avatar-illustration-on-isolated-background-human-permission-sign-business-concept-vector.jpg"
+                          : user.thumbnail
+                      }
                       alt={user.name}
                       className="w-10 h-10 rounded-full"
                     />
-                    <span className="font-medium">{user.name}</span>
+                    <span className="font-medium">{user.fullName}</span>
                   </div>
                   <Button
                     variant="contained"
-                    color={user.added ? "success" : "primary"}
-                    onClick={() => toggleUser(user.id)}
+                    color={isSelected ? "success" : "primary"}
+                    onClick={() => toggleUser(user.userId)}
                   >
-                    {user.added ? "✔ Added" : "+ Add"}
+                    {isSelected ? "✔ Added" : "+ Add"}
                   </Button>
                 </div>
-              ))}
+              );
+            })}
           </div>
 
           {/* Actions */}
@@ -121,16 +131,26 @@ const Group = ({ open, onClose }) => {
             <Button onClick={onClose} color="secondary">
               Cancel
             </Button>
-            <Button variant="contained" color="primary">
+            <Button
+              variant="contained"
+              onClick={() => handleAddGroup()}
+              color="primary"
+            >
               Create
             </Button>
           </DialogActions>
         </div>
       </Dialog>
+
+      <Snackbar
+        key={message}
+        open={openN}
+        autoHideDuration={6000}
+        onClose={handleClose}
+        message={message}
+      />
     </div>
   );
 };
-
-//Dòng code này dùng PropTypes để kiểm tra kiểu dữ liệu của props được truyền vào component Group.
 
 export default Group;

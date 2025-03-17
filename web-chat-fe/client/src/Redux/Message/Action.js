@@ -24,7 +24,12 @@ export const createMessage = (data,token) => async (dispatch) => {
 
 export const getAllMessage = (repData,token) => async (dispatch) => {
     try {
-        const res = await axios.post(`${BASE_API_URL}/api/message/chat/${repData.chatId}`, {
+        const res = await axios.get(`${BASE_API_URL}/api/message/chat`, 
+        {
+            params:{
+                timestamp: "",
+                chatId: repData
+            },
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`

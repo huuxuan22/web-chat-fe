@@ -1,8 +1,8 @@
 import  axios  from 'axios';
 import { BASE_API_URL } from '../../config/api';
-import { CREATE_CHAT, CREATE_GROUP } from './ActionType';
+import { CREATE_CHAT, CREATE_GROUP, GET_USER_CHAT } from './ActionType';
 
-export const creaeChat  =(data,token)=>async (dispatch) => {
+export const createChat  =(data,token)=>async (dispatch) => {
     try {
         const res = await axios.post(`${BASE_API_URL}/api/chat/single`,data, {
             headers: {
@@ -44,13 +44,14 @@ export const creaeGroup  =(data,token)=>async (dispatch) => {
 
 export const getUserChat  =(data,token)=>async (dispatch) => {
     try {
-        const res = await axios.post(`${BASE_API_URL}/api/chat/${data}`, {
+        const res = await axios.get(`${BASE_API_URL}/api/chat/get-all`, {
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
             }
         } )
-        dispatch({type: CREATE_GROUP, payload: res.data});
+        dispatch({type: GET_USER_CHAT, payload: res.data});
+        console.log("kiểm tra getUserChat trong phần service: ", res.data);
         return {success: true, data: res.data};    
     } catch (error) {
         console.log("Lỗi khi createChat :", error);

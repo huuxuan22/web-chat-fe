@@ -1,0 +1,1 @@
+export const SEARCH_USER_GROUP = "SEARCH_USER_GROUP"
