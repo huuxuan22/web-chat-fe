@@ -9,6 +9,7 @@ import Login from './component/Register/Login';
 import Test from "./component/test/Test";
 import Status from "./component/Status/Status";
 import FriendRequest from "./component/AddFriend/FriendRequest";
+import WatchUser from "./component/AddFriend/WatchUser";
 
 function App() {
   return (
@@ -18,8 +19,10 @@ function App() {
         <Route path="/create-group" element={<Group/>}></Route>
         <Route path="/signin" element={<Login/>}></Route>
         <Route path="/signup" element={<Register/>}></Route>
+        <Route path="/signup" element={<Register/>}></Route>
         <Route path="/status" element= {<Status/>}></Route>
         <Route path="/Friend" element= {<FriendRequest/>}></Route>
+        <Route path="/watch-user" element={<WatchUser/>}></Route>
       </Routes>
     </div>
   );

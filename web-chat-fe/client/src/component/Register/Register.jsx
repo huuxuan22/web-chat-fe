@@ -50,8 +50,10 @@ const Register = () => {
               message: result.data.password, // Gán thông báo lỗi từ API
           })
           }
+          return
         }
-        localStorage.setItem("token",result.data)
+        localStorage.setItem("token",result.data);
+        navigate("/", { state: { notificationCheck: true } });
     }
   useEffect(() => {
     if (token) {

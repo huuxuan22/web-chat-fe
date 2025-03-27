@@ -62,3 +62,8 @@ export const getUserChat  =(data,token)=>async (dispatch) => {
         } 
     }
 } 
+
+
+export const resetUserChat = () => async (dispatch) => {
+    
+}

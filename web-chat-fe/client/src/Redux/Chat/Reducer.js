@@ -1,5 +1,5 @@
 import { store } from "../store"
-import { CREATE_CHAT, CREATE_GROUP, GET_USER_CHAT } from "./ActionType"
+import { CREATE_CHAT, CREATE_GROUP, GET_USER_CHAT, RESET_USER_CHAT } from "./ActionType"
 
 
 const initialValue = {
@@ -9,7 +9,6 @@ const initialValue = {
 }
 
 
-
 export const chatReducer = (store = initialValue, {type,payload}) => {
     if (type === CREATE_CHAT) {
         return {...store,createChat: payload}
@@ -17,6 +16,8 @@ export const chatReducer = (store = initialValue, {type,payload}) => {
         return {...store,createGroup: payload}
     }else if (type === GET_USER_CHAT) {
         return {...store,getUserChat: payload}
+    }else if (type === RESET_USER_CHAT) {
+        return {...store,getUserChat: []}
     }else {
         return store
     }

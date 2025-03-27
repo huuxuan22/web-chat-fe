@@ -1,8 +1,102 @@
 .content-container {
-    max-height: 900px; /* Điều chỉnh chiều cao tối đa */
+    max-height: 1000px; /* Điều chỉnh chiều cao tối đa */
     overflow-y: auto; /* Hiển thị thanh cuộn dọc nếu nội dung vượt quá */
     overflow-x: hidden; /* Ẩn thanh cuộn ngang nếu không cần thiết */
     border: 1px solid #ccc; /* Tùy chọn: thêm đường viền để phân biệt */
     padding: 10px;
   }
-  
+  /* Message bubble */
+.message-bubble {
+  padding: 8px 12px;
+  border-radius: 20px;
+  max-width: 70%;
+  word-wrap: break-word;
+  margin-bottom: 4px;
+}
+
+.message-left {
+  background-color: #e4e6eb;
+  color: #000;
+  align-self: flex-start;
+}
+
+.message-right {
+  background-color: #0084ff;
+  color: #fff;
+  align-self: flex-end;
+}
+.welcome-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f8f8;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  max-width: 400px;
+  width: 90%;
+  margin: 20px auto;
+  animation: fadeIn 0.8s ease;
+}
+
+.welcome-image {
+  width: 80%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  object-fit: cover;
+}
+
+.welcome-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #555;
+  font-style: italic;
+  font-size: 16px;
+  text-align: center;
+}
+
+.emoji {
+  font-size: 24px;
+  animation: wave 1.8s infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+.parent {
+  position: relative;
+}
+
+.child {
+  position: absolute;
+  top: 20px;
+  left: 35%;
+  width: 100%;
+  padding: 10px;
+}
+.sticky-loader {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 1rem 0;
+  background: linear-gradient(to bottom, 
+    rgba(255,255,255,1) 0%, 
+    rgba(255,255,255,0.8) 100%);
+  backdrop-filter: blur(2px);
+}

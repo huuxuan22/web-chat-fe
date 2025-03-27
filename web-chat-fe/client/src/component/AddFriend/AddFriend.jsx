@@ -25,14 +25,14 @@
   import * as notificationService from "./../../Redux/Notification/Action";
   import { set } from "react-hook-form";
   
-  const AddFriend = ({ open, onClose, userLogin,setCheck,check,reloadNotification }) => {
+  const AddFriend = ({ open, onClose, userLogin,reloadNotification,setUserChat }) => {
     const [search, setSearch] = useState("");
     const stompClientRef = useRef(null); // Sử dụng useRef để giữ WebSocket client
     const dispatch = useDispatch();
     const { auth } = useSelector((store) => store);
     const token = localStorage.getItem("token");
 
-
+    
     useEffect(() => {
       // Khởi tạo WebSocket client chỉ một lần khi component được mount
       const socketFactory = () => new SockJS("http://localhost:8080/ws");
@@ -41,34 +41,23 @@
       client.connect(
         {},
         () => {
-          console.log("✅ Kết nối WebSocket thành công!");
           stompClientRef.current = client;
-
           client.subscribe("/topic/messages", (message) => {
-            const data  = JSON.parse(message.body);
             dispatch(userService.searchUserForAdd({ search, token }));
             reloadNotification();
           });
         },
         (error) => {
-          console.error("❌ Lỗi kết nối WebSocket:", error);
         }
       );
 
       return () => {
         if (client) {
           client.disconnect(() => {
-            console.log("🔌 WebSocket đã đóng kết nối");
           });
         }
       };
     }, []);
-
-    useEffect(() => {
-      if (token) {
-        dispatch(userService.searchUserForAdd({ search, token }));
-      }
-    }, [token, dispatch,search]);
 
     const handleSearch = async () => {
       await dispatch(userService.searchUserForAdd({ search, token }));
@@ -89,7 +78,8 @@
         const jsonMessage = JSON.stringify(newInvitation);
         if (stompClientRef.current) {
           stompClientRef.current.send("/app/notification-add", {}, jsonMessage);
-          reloadNotification()
+          reloadNotification();
+          handleSearch();
         }
       } catch (error) {
         
@@ -98,25 +88,25 @@
     const handleCancelAddFriend = async (friend) => {
     
       try {
-          if (friend.isGroup === 3) {
-            setCheck(true);
-          }
-          setCheck(false);
-          // Hủy lời mời kết bạn
           const cancelInvitation = {
             userSend: userLogin.userId,
             userReceive: friend.userId,
             message : "cancelFriend"
           };
-
           const jsonMessage = JSON.stringify(cancelInvitation);
-          console.log("✅ Hủy lời mời kết bạn:", jsonMessage);
           stompClientRef.current.send("/app/cancel-notification-add", {}, jsonMessage);
           reloadNotification();
+          handleSearch();
       } catch (error) {
         
       }
     };
+
+
+    const handleChat = (value) => {
+        setUserChat(value);
+        handleClose();
+    }
     return (
       <Dialog
         open={open}
@@ -177,16 +167,17 @@
                       }}
                     >
                       <ListItemAvatar>
-                        <Avatar src={friend.avatar} />
+                        <Avatar src={friend?.thubnail ? friend.thubnail : "https://th.bing.com/th/id/OIP.FMqCl9QpsBme2zXSegsolwHaHa?rs=1&pid=ImgDetMain"} />
                       </ListItemAvatar>
                       <ListItemText primary={friend.fullName} />
 
                       {/* ✅ Nút Kết bạn / Nhắn tin / Hủy lời mời */}
-                      {friend.isGroup === 0 || friend.isGroup === 1 ? (
+                      {friend.isGroup === 1 || friend.isGroup === 2 ? (
                         <Button
                           variant="contained"
                           color="success"
                           startIcon={<ChatIcon />}
+                          onClick={() => handleChat(friend)}
                         >
                           Nhắn tin
                         </Button>

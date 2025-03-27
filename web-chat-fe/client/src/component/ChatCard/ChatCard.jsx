@@ -8,7 +8,7 @@ const ChatCard = ({ item, groupStatus, userLogin }) => {
   const token = localStorage.getItem("token");
   const dispatch = useDispatch();
   const { auth } = useSelector(store => store);
-
+  
   useEffect(() => {
     dispatch(userService.currentUser(token));
   }, []);
@@ -26,7 +26,6 @@ const ChatCard = ({ item, groupStatus, userLogin }) => {
     }
   }, [token, dispatch]);
 
-  console.log("thông tin người dùng: ", auth.currentUser);
 
   return (
     <div className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 rounded-lg cursor-pointer">
@@ -35,10 +34,15 @@ const ChatCard = ({ item, groupStatus, userLogin }) => {
         <img
           className="h-12 w-12 rounded-full"
           src={
-            item.isGroup === 1
-              ? "https://cdn-icons-png.flaticon.com/512/21/21104.png" // Ảnh mặc định của nhóm
-              : item.avatar ||
-                "https://static.vecteezy.com/system/resources/previews/018/765/757/original/user-profile-icon-in-flat-style-member-avatar-illustration-on-isolated-background-human-permission-sign-business-concept-vector.jpg"
+              item.isGroup === 2 ? (
+                item.chatImage !== null
+                ? item.chatImage // Ảnh mặc định của nhóm
+                : "https://static.vecteezy.com/system/resources/previews/008/302/462/original/eps10-grey-user-icon-or-logo-in-simple-flat-trendy-modern-style-isolated-on-white-background-free-vector.jpg"
+              ) : (
+                item.chatImage !== null
+                ? item.chatImage // Ảnh mặc định của nhóm
+                : "https://www.svgrepo.com/show/4552/user-groups.svg"
+              )
           }
           alt="Avatar"
         />
@@ -76,9 +80,9 @@ const ChatCard = ({ item, groupStatus, userLogin }) => {
           ) : (
             <div>
               {userLogin?.fullName === item.senderName ? (
-                <div><strong>Bạn:</strong> <span>{item.lastMessage}</span></div>
+                <div className="text-sm">Bạn: <span>{item.lastMessage}</span></div>
               ) : (
-                <><strong>{item.senderName}:</strong> <span className={`${statusGroup?.isNewMessage ? "font-bold text-green-600" : ""}`}>{item.lastMessage}</span></>
+                <><span className={`${statusGroup?.isNewMessage ? "font-bold text-green-600 text-sm": ""}`}>{item.lastMessage}</span></>
               )}
             </div>
           )}

@@ -10,7 +10,7 @@ import { ImAttachment } from "react-icons/im";
 import { BiSend } from "react-icons/bi";
 import { BsHandThumbsUp } from "react-icons/bs";
 import Profile from "../Profile/Profile";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import * as React from "react";
 import Button from "@mui/material/Button";
@@ -24,48 +24,71 @@ import { useEffect } from "react";
 import SockJS from "sockjs-client";
 import * as statusService from "./../../Redux/Status/Action";
 import { Stomp } from "@stomp/stompjs";
-import { Badge } from "@mui/material";
+import { Alert, Badge, Snackbar } from "@mui/material";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import AddFriend from "../AddFriend/AddFriend";
 import PersonAddIcon from "@mui/icons-material/PersonAdd"; // Import biểu tượng mới
 import FriendRequestsList from "../AddFriend/FriendRequest";
 import * as notificationService from "./../../../src/Service/notificationService";
+import * as userService1 from "./../../Service/UserService";
 import { set } from "react-hook-form";
-const HomePage = () => {
+import { useAuth } from "./../../contexts/authContext/index";
+import { useContext } from "react";
+import StaticModal from "../Modal/StaticModal";
+
+const HomePage = ({ children }) => {
   const [query, setQuery] = useState(null);
+  const location = useLocation();
+  const { notificationCheck } = location.state || {};
+  const [openNotification, setOpenNotification] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [logout,setLogout] = useState(false);
+  // Khi component mount, nếu nhận được openNotification, thì mở Snackbar
+  useEffect(() => {
+    if (notificationCheck) {
+      setOpenNotification(true);
+    }
+  }, [notificationCheck]);
+  const handleCloseNotification = (event, reason) => {
+    if (reason === "clickaway") return;
+    setOpenNotification(false); // đóng Snackbar
+  };
   const [currentChat, setCurrentChat] = useState(false);
   const [isProfile, setIsProfile] = useState(true);
   const [chatUser, setChatUser] = useState(null);
   const [userLogin, setUserLogin] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { auth, chat, message, status  } = useSelector(
-    (store) => store
-  );
-  const {notification} = useSelector(store => store)
+  const { auth, chat, message, status } = useSelector((store) => store);
+  const { notification } = useSelector((store) => store);
   const token = localStorage.getItem("token");
   const [openGroup, setOpenGroup] = useState(false);
   const [openAddFriend, setOpenAddFriend] = useState(false);
   const [showFriendRequests, setShowFriendRequests] = useState(false);
-  const [notificationList,setNotificationList] = useState([]);
+  const [notificationList, setNotificationList] = useState([]);
   const [check, setCheck] = useState(false);
-
-  useEffect(() => {
-    notificationService.getAllNotification(token).then((res) => {
-      setNotificationList(res.data);
-  })}, [check]);
-
-
-  const reloadNotification =async () => {
+  const [checkChat, setCheckChat] = useState(false);
+  const [triggerEffect, setTriggerEffect] = useState(false);
+  const { currentUser } = useAuth();
+  if (!token && !currentUser) {
+    navigate("/signin");
+  }
+  const reloadNotification = async () => {
     await notificationService.getAllNotification(token).then((res) => {
       setNotificationList(res.data);
     });
   };
-  
+  const LoadUser = async () => {
+    await userService1.currentUser(token).then((data) => {
+      setUserLogin(data.data);
+    });
+  };
   useEffect(() => {
     reloadNotification();
+    LoadUser();
   }, []);
 
+  useEffect(() => {}, [setCheckChat]);
 
   const handleClickOnChatCard = (value) => {
     setChatUser(value);
@@ -88,7 +111,6 @@ const HomePage = () => {
   useEffect(() => {
     const fetchUser = async () => {
       const response = await dispatch(userService.currentUser(token));
-      setUserLogin(response.data); // Cập nhật state với dữ liệu user
     };
 
     if (token) {
@@ -113,6 +135,13 @@ const HomePage = () => {
     }
   }, [auth.searchUser]);
 
+  useEffect(() => {
+    if (token) {
+      const keyword = "";
+      dispatch(userService.searchUser({ keyword, token }));
+    }
+  }, [checkChat]);
+
   // webSocket ========================================================================
   const socketFactory = () => new SockJS("http://localhost:8080/ws");
   const client = Stomp.over(socketFactory);
@@ -134,6 +163,7 @@ const HomePage = () => {
           const receivedMessage = JSON.parse(message.body);
           const keyword = "";
           dispatch(userService.searchUser({ keyword, token }));
+          
         });
       },
       (error) => {
@@ -152,6 +182,13 @@ const HomePage = () => {
   const handleClickAddFriend = () => {
     setOpenAddFriend(true);
   };
+
+  // <button data-modal-target="static-modal" data-modal-toggle="static-modal" class="block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">
+  //   Toggle modal
+  // </button>
+
+  // <!-- Main modal -->
+
   return (
     <div className="relative min-h-screen flex flex-col bg-gray-200">
       <div className="w-full py-6 bg-[#20ac8b]"></div>
@@ -168,9 +205,9 @@ const HomePage = () => {
                 <img
                   className="rounded-full w-10 h-10 cursor-pointer"
                   src={
-                    userLogin === null
-                      ? "https://uploads-ssl.webflow.com/62396affb4902b847d57a975/6447c56a51c36d7cd2950602_Website_Blog_Feature-Image_How-to-use-WA-Web-for-Business.png"
-                      : userLogin.thumbnail
+                    userLogin?.thumbnail === null
+                      ? "https://th.bing.com/th/id/OIP.FMqCl9QpsBme2zXSegsolwHaHa?rs=1&pid=ImgDetMain"
+                      : userLogin?.thumbnail
                   }
                   alt="User Avatar"
                 />
@@ -186,18 +223,24 @@ const HomePage = () => {
                   <Badge
                     badgeContent={notificationList.length}
                     color="error"
-                    onClick={() => setShowFriendRequests(!showFriendRequests)} // Toggle hiển thị danh sách
+                    onClick={() => {
+                      setShowFriendRequests(!showFriendRequests);
+                      setTriggerEffect((prev) => !prev);
+                    }} // Toggle hiển thị danh sách
                     className="cursor-pointer"
                   >
-                    <PersonAddIcon style={{ fontSize: "30px",marginBottom: "10px" }} />
+                    <PersonAddIcon
+                      style={{ fontSize: "30px", marginBottom: "10px" }}
+                    />
                   </Badge>
                   {showFriendRequests && (
                     <div className="friendship-list absolute">
                       <FriendRequestsList
-                        notifications={notification.notifications}
+                        notifications={notificationList}
                         setCheck={setCheck}
-                        check= {check}
+                        check={check}
                         userLogin={userLogin}
+                        reloadNotification={reloadNotification}
                       />
                     </div>
                   )}
@@ -226,7 +269,9 @@ const HomePage = () => {
                     <MenuItem onClick={handleClickAddFriend}>
                       ADD FRIEND
                     </MenuItem>
-                    <MenuItem onClick={handleClose}>LOGOUT</MenuItem>
+                    <MenuItem  onClick={() => setIsModalOpen(true)} >
+                    
+                    LOGOUT</MenuItem>
                   </Menu>
                 </div>
               </div>
@@ -249,27 +294,40 @@ const HomePage = () => {
             </div>
 
             {/* Chat List */}
-            <div className="flex-1  space-y-1 overflow-y-auto bg-white rounded-lg shadow-inner p-2">
-              {auth.searchUser
-                ?.slice()
-                .reverse()
-                .map((item, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleClickOnChatCard(item)}
-                    className="mb-2 border-b pb-2"
-                  >
-                    <ChatCard
-                      item={item}
-                      groupStatus={status.groupStatus}
-                      userLogin={userLogin}
-                    />
-                  </div>
-                ))}
+            <div className="flex-1 space-y-1 overflow-y-auto bg-white rounded-lg shadow-inner p-2">
+              {/* Nếu không có user nào */}
+              {auth.searchUser.length === 0 ? (
+                <div className="flex items-center justify-center px-4 py-6 bg-gray-50 rounded-lg text-gray-500">
+                  Không có bạn bè nào
+                </div>
+              ) : (
+                // Có dữ liệu thì map render ChatCard
+                auth.searchUser
+                  ?.slice()
+                  .reverse()
+                  .map((item, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleClickOnChatCard(item)}
+                      className="mb-2 border-b pb-2"
+                    >
+                      <ChatCard
+                        item={item}
+                        image={item.chatImage}
+                        groupStatus={status.groupStatus}
+                        userLogin={userLogin}
+                      />
+                    </div>
+                  ))
+              )}
             </div>
           </div>
         ) : (
-          <Profile setIsProfile={setIsProfile} />
+          <Profile
+            setIsProfile={setIsProfile}
+            userLogin={userLogin}
+            LoadUser={LoadUser}
+          />
         )}
 
         {/* Main Chat Area 
@@ -280,8 +338,6 @@ const HomePage = () => {
             item={chatUser}
             userLogin={userLogin}
             groupStatus={status.groupStatus}
-            socketFactory={socketFactory}
-            client={client}
           />
         ) : (
           <div className="w-2/3 h-full flex flex-col items-center justify-center bg-white p-6 rounded-r-lg">
@@ -306,6 +362,9 @@ const HomePage = () => {
         open={openGroup}
         setOpenGroup={setOpenGroup}
         onClose={() => setOpenGroup(false)}
+        handleSearchChat={handleSearch}
+        setCheckChat={setCheckChat}
+        check={check}
       />
       <AddFriend
         open={openAddFriend}
@@ -314,7 +373,20 @@ const HomePage = () => {
         setCheck={setCheck}
         check={check}
         reloadNotification={reloadNotification}
+        triggerEffect={triggerEffect}
       />
+      <Snackbar
+        open={openNotification}
+        onClose={handleCloseNotification}
+        autoHideDuration={2000} // 👈 thời gian hiển thị: 5000ms = 5s
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity="success" variant="filled" sx={{ width: "200%" }}>
+          Bạn đã đăng nhập thành công!
+        </Alert>
+      </Snackbar>
+
+      <StaticModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       {/* cửa sổ nhắn tin chỗ này  */}
     </div>

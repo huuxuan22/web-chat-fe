@@ -77,7 +77,6 @@ export const searchUser = (data) => async (dispatch) => {
             }
         );
         dispatch({ type: SEARCH_USER, payload: res.data });
-        console.log(res.data);
         return res.data;
     } catch (error) {
         console.error("Lỗi API:", error);
@@ -90,8 +89,9 @@ export const searchUser = (data) => async (dispatch) => {
 export const updateUser = (data) => async (dispatch) => {
     try {
         const res = await axios.post(
-            `${BASE_API_URL}/api/user/update/${data.id}`,
+            `${BASE_API_URL}/api/user/update    `,
             {
+                params: {updateUserDTO: data},
                 headers: {
                     Authorization: `Bearer ${data.token}`, // Thêm token vào headers
                     "Content-Type": "application/json"
@@ -102,7 +102,7 @@ export const updateUser = (data) => async (dispatch) => {
         return res;
     } catch (error) {
         console.error("Lỗi API:", error);
-
+        
         return {
             error: error.response?.data?.message || "Lỗi máy chủ, vui lòng thử lại!"
         };
@@ -121,8 +121,9 @@ export const searchUserForAdd = (data) => async (dispatch) => {
                 }
             }
         );
+
+        
         dispatch({ type: SEARCH_USER_FOR_ADD_FRIEND, payload: res.data });
-        console.log(res.data);
         return res.data;
     } catch (error) {
         console.error("Lỗi API:", error);

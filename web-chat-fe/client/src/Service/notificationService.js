@@ -20,3 +20,26 @@ export const getAllNotification =async (token) => {
         }
     }
 }
+
+export const deleteNOtificationByIsRead2 =async (token,notificationIds) => {
+    try {
+        const res = await axios.delete(`${BASE_API_URL}/api/notification/clean`, 
+        {
+            params: {
+                notificationIds
+            },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            }
+        });
+        return {success: true , data: res.data};
+    } catch (error) {
+        console.log("Lỗi ở createMessage: ", error);
+        if (error.response) {
+            return {success: false , data: error.response.data};
+        } else {
+            return {success: false, data: error.response.data}
+        }
+    }
+}
